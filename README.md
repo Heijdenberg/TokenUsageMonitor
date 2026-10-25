@@ -6,7 +6,7 @@ Ett fristående hobbyprojekt. Det är inte kopplat till, godkänt av eller spons
 
 | Projekt | Vad det gör |
 |---|---|
-| `TokenUsage.StatusLine` | Claude Codes statusradskommando. Skriver ut statusraden, sparar gränserna och läser in tokenförbrukning från Claude Codes sessionsloggar till `%LOCALAPPDATA%\TokenUsage\token-usage.db`. Startar, gör sitt på cirka 30 ms och avslutas. |
+| `TokenUsage.StatusLine` | Claude Codes statusradskommando. Skriver ut statusraden, sparar gränserna och läser in tokenförbrukning från Claude Codes sessionsloggar till `%LOCALAPPDATA%\TokenUsage\token-usage.db`. Körs också som hook (`--hook`), så att tokenförbrukningen läses in även från VS Code-tillägget och skrivbordsappen. Startar, gör sitt på cirka 30 ms och avslutas. |
 | `TokenUsage.Monitor` | WPF-app som läser databasen var 5:e sekund. **Gränser** visar gränserna som ringar, **Körningar** jämför körningar uppdelat per agent och modell. Den skriver ingenting. |
 | `TokenUsage.Core` | Delad kod: databas, inläsning av loggar, sammanslagning, priser. |
 | `TokenUsage.Core.Tests` | Enhetstester. |
@@ -20,6 +20,8 @@ Ett fristående hobbyprojekt. Det är inte kopplat till, godkänt av eller spons
 - **Ingen text ur dina meddelanden.** Ett meddelande kan innehålla hemligheter, till exempel en nyckel, så databasen sparar bara var meddelandet finns i Claude Codes logg (fil och position). Appen läser första raden därifrån när den visas. För slash-kommandon sparas kommandonamnet, till exempel `/workflow`, men aldrig det som står efter. När Claude Code har rensat bort en logg (som standard efter 30 dagar) visas bara kommandonamnet, eller "(texten finns inte längre i loggen)".
 
 Statusraden läser sin egen sessions logg vid varje körning och kontrollerar alla loggar högst en gång i minuten. Därför kommer även headless-körningar med `claude -p` med, så länge någon interaktiv session är öppen.
+
+VS Code-tillägget och skrivbordsappen kör ingen statusrad, men de kör hooks. Med hookarna under [Bygga och installera](#bygga-och-installera) läses sessionens logg in när du skickar ett meddelande, när Claude har svarat, när en underagent är klar och när sessionen avslutas. Gränserna skickar Claude Code däremot bara till statusraden, så de uppdateras bara medan en CLI-session är öppen (i VS Code även med inställningen `claudeCode.useTerminal`).
 
 **API-pris** är vad tokens skulle kosta på Anthropics API, enligt listpriserna i `TokenUsage.Core/Pricing.cs`. Det är ett sätt att väga tokentyper och modeller mot varandra, inte vad prenumerationen kostar. Användning på claude.ai eller i skrivbordsappens chatt finns inte i loggarna.
 
@@ -66,6 +68,19 @@ Peka sedan Claude Codes statusrad på exe-filen i `%USERPROFILE%\.claude\setting
   "refreshInterval": 5
 }
 ```
+
+För VS Code-tillägget och skrivbordsappen lägger du också till hookarna i samma fil. Har du redan hooks lägger du till dessa bredvid dem:
+
+```json
+"hooks": {
+  "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }],
+  "Stop":             [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }],
+  "SubagentStop":     [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }],
+  "SessionEnd":       [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }]
+}
+```
+
+Hooken skriver inte ut något och rör inte gränserna. Claude Code skriver loggen asynkront, så det sista svaret kan komma med först vid nästa hook, till exempel när du skickar nästa meddelande.
 
 För att uppdatera exe-filen senare publicerar du igen. Om en session råkar köra den just då misslyckas kopieringen, och då är det bara att köra igen.
 

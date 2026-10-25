@@ -87,6 +87,17 @@ public class StatusLineTextTests
     {
         Assert.Equal(@"C:\x\s.jsonl", StatusInput.Parse("""{"transcript_path":"C:\\x\\s.jsonl"}""").TranscriptPath);
     }
+
+    [Fact]
+    public void Reads_hook_input_without_limits()
+    {
+        var input = StatusInput.Parse("""
+            {"session_id":"abc","transcript_path":"C:\\x\\s.jsonl","cwd":"C:\\x","hook_event_name":"Stop","stop_hook_active":false}
+            """);
+        Assert.Equal(@"C:\x\s.jsonl", input.TranscriptPath);
+        Assert.Null(input.FiveHour.UsedPercentage);
+        Assert.Null(input.SevenDay.UsedPercentage);
+    }
 }
 
 public class PricingTests
