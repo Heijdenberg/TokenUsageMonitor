@@ -6,7 +6,7 @@ Ett fristående hobbyprojekt. Det är inte kopplat till, godkänt av eller spons
 
 | Projekt | Vad det gör |
 |---|---|
-| `TokenUsage.StatusLine` | Claude Codes statusradskommando. Skriver ut statusraden, sparar gränserna och läser in tokenförbrukning från Claude Codes sessionsloggar till `%LOCALAPPDATA%\TokenUsage\token-usage.db`. Körs också som hook (`--hook`), så att tokenförbrukningen läses in även från VS Code-tillägget och skrivbordsappen. Startar, gör sitt på cirka 30 ms och avslutas. |
+| `TokenUsage.StatusLine` | Claude Codes statusradskommando. Skriver ut statusraden, sparar gränserna och läser in tokenförbrukning från Claude Codes sessionsloggar till `%USERPROFILE%\.token-usage\token-usage.db`. Körs också som hook (`--hook`), så att tokenförbrukningen läses in även från VS Code-tillägget och skrivbordsappen. Startar, gör sitt på cirka 30 ms och avslutas. |
 | `TokenUsage.Monitor` | WPF-app som läser databasen var 5:e sekund. **Gränser** visar gränserna som ringar, **Körningar** jämför körningar uppdelat per agent och modell. Den skriver ingenting. |
 | `TokenUsage.Core` | Delad kod: databas, inläsning av loggar, sammanslagning, priser. |
 | `TokenUsage.Core.Tests` | Enhetstester. |
@@ -48,10 +48,10 @@ Kräver Windows, .NET 8 SDK och, för Native AOT-bygget, Visual Studios arbetsbe
 ```powershell
 # AOT-kompilatorn i .NET 8 letar efter vswhere.exe i PATH.
 $env:PATH = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer;$env:PATH"
-dotnet publish TokenUsage.StatusLine -c Release -r win-x64 -o "$env:USERPROFILE\.claude\token-usage"
+dotnet publish TokenUsage.StatusLine -c Release -r win-x64 -o "$env:USERPROFILE\.token-usage"
 
 # Läs in befintliga sessionsloggar en gång (tar några sekunder).
-& "$env:USERPROFILE\.claude\token-usage\TokenUsage.StatusLine.exe" --import-all
+& "$env:USERPROFILE\.token-usage\TokenUsage.StatusLine.exe" --import-all
 
 # Starta appen.
 dotnet run --project TokenUsage.Monitor
@@ -64,7 +64,7 @@ Peka sedan Claude Codes statusrad på exe-filen i `%USERPROFILE%\.claude\setting
 ```json
 "statusLine": {
   "type": "command",
-  "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe",
+  "command": "C:/Users/<ANVÄNDARNAMN>/.token-usage/TokenUsage.StatusLine.exe",
   "refreshInterval": 5
 }
 ```
@@ -73,10 +73,10 @@ För VS Code-tillägget och skrivbordsappen lägger du också till hookarna i sa
 
 ```json
 "hooks": {
-  "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }],
-  "Stop":             [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }],
-  "SubagentStop":     [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }],
-  "SessionEnd":       [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.claude/token-usage/TokenUsage.StatusLine.exe --hook" }] }]
+  "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.token-usage/TokenUsage.StatusLine.exe --hook" }] }],
+  "Stop":             [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.token-usage/TokenUsage.StatusLine.exe --hook" }] }],
+  "SubagentStop":     [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.token-usage/TokenUsage.StatusLine.exe --hook" }] }],
+  "SessionEnd":       [{ "hooks": [{ "type": "command", "command": "C:/Users/<ANVÄNDARNAMN>/.token-usage/TokenUsage.StatusLine.exe --hook" }] }]
 }
 ```
 
@@ -95,16 +95,18 @@ För att prova exe-filen utan att röra riktig data: peka `TOKEN_USAGE_DIR` på 
 ```powershell
 $env:TOKEN_USAGE_DIR = Join-Path $env:TEMP 'usage-test'
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-'{"rate_limits":{"five_hour":{"used_percentage":42,"resets_at":' + ($now+8100) + '}}}' | & "$env:USERPROFILE\.claude\token-usage\TokenUsage.StatusLine.exe"
+'{"rate_limits":{"five_hour":{"used_percentage":42,"resets_at":' + ($now+8100) + '}}}' | & "$env:USERPROFILE\.token-usage\TokenUsage.StatusLine.exe"
 # 5h: 42% (återställs om 2h 14m) | 7d: inväntar data
 Remove-Item $env:TOKEN_USAGE_DIR -Recurse -Force; Remove-Item Env:TOKEN_USAGE_DIR
 ```
 
-Om något går fel när data sparas skrivs statusraden ändå ut, och det senaste felet hamnar i `%LOCALAPPDATA%\TokenUsage\token-usage-error.txt`.
+Om något går fel när data sparas skrivs statusraden ändå ut, och det senaste felet hamnar i `%USERPROFILE%\.token-usage\token-usage-error.txt`.
 
 ## Databasen
 
-`%LOCALAPPDATA%\TokenUsage\token-usage.db`, SQLite i WAL-läge. Den ligger i din egen profil, eftersom sessionsnamn och agentbeskrivningar säger en del om vad du arbetar med, och i Local (inte Roaming) eftersom SQLite-filer inte tål att synkas.
+`%USERPROFILE%\.token-usage\token-usage.db`, SQLite i WAL-läge, i samma mapp som exe-filen. Den ligger i din egen profil, eftersom sessionsnamn och agentbeskrivningar säger en del om vad du arbetar med, men utanför `AppData`: är Claude installerat som MSIX-paket körs hookarna i paketet, och Windows skickar då deras skrivningar under `AppData` till paketets egen kopia, som appen inte ser. Mappen synkas inte, vilket SQLite-filer inte tål, och hör inte till något enskilt verktyg.
+
+Låg databasen i den gamla platsen `%LOCALAPPDATA%\TokenUsage` flyttas den hit automatiskt första gången exe-filen körs.
 
 | Tabell | Innehåll |
 |---|---|

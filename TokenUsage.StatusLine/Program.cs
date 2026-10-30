@@ -8,6 +8,7 @@ using TokenUsage.Core;
 
 if (args is ["--import-all"])
 {
+    UsagePaths.MigrateLegacyData();
     using var db = UsageDatabase.OpenForWriting(UsagePaths.DatabasePath);
     new TranscriptImporter(db).ImportAll(UsagePaths.ClaudeProjectsDir);
     Console.WriteLine($"Läste in sessionsloggarna i {UsagePaths.ClaudeProjectsDir} till {UsagePaths.DatabasePath}.");
@@ -34,6 +35,7 @@ if (!isHook)
 // Recording must never break the status line or the session; keep only the last error for troubleshooting.
 try
 {
+    UsagePaths.MigrateLegacyData();
     using var db = UsageDatabase.OpenForWriting(UsagePaths.DatabasePath);
     if (!isHook) db.UpdateLimits(input, now);
     var importer = new TranscriptImporter(db);
