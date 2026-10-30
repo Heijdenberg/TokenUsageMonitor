@@ -43,10 +43,10 @@ VS Code-tillägget och skrivbordsappen kör ingen statusrad, men de kör hooks. 
 
 ## Bygga och installera
 
-Kräver Windows, .NET 8 SDK och, för Native AOT-bygget, Visual Studios arbetsbelastning "Desktop development with C++".
+Kräver Windows, .NET 10 SDK och, för Native AOT-bygget, Visual Studios arbetsbelastning "Desktop development with C++".
 
 ```powershell
-# AOT-kompilatorn i .NET 8 letar efter vswhere.exe i PATH.
+# AOT-kompilatorn letar efter vswhere.exe i PATH.
 $env:PATH = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer;$env:PATH"
 dotnet publish TokenUsage.StatusLine -c Release -r win-x64 -o "$env:USERPROFILE\.token-usage"
 
@@ -57,7 +57,7 @@ dotnet publish TokenUsage.StatusLine -c Release -r win-x64 -o "$env:USERPROFILE\
 dotnet run --project TokenUsage.Monitor
 ```
 
-Utan C++-arbetsbelastningen: publicera med `-p:PublishAot=false` i stället. Då krävs .NET 8-runtime, och programmet startar långsammare.
+Utan C++-arbetsbelastningen: publicera med `-p:PublishAot=false` i stället. Då krävs .NET 10-runtime, och programmet startar långsammare.
 
 Peka sedan Claude Codes statusrad på exe-filen i `%USERPROFILE%\.claude\settings.json`. Ändra bara nyckeln `statusLine` och behåll alla andra inställningar:
 
