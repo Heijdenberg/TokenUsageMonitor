@@ -74,9 +74,12 @@
                                                             <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/>
                                                             <Run Text="{Binding Summary, Mode=OneWay}" Foreground="{StaticResource Muted}" FontSize="12.5"/>
                                                         </TextBlock>
-                                                        <Button Content="Visa definition" Margin="12,0,0,0" Padding="8,1" FontSize="12.5"
-                                                                Visibility="{Binding DefinitionVisibility}" Click="ShowDefinition_Click"
-                                                                ToolTip="Agentfilen som den såg ut när agenten kördes"/>
+                                                        <Button Content="Visa uppdrag" Margin="12,0,0,0" Padding="8,1" FontSize="12.5"
+                                                                Visibility="{Binding SubagentVisibility}" Click="ShowAgentPrompt_Click"
+                                                                ToolTip="Prompten huvudsessionen skickade till agenten, läst ur loggen"/>
+                                                        <Button Content="Visa definition" Margin="8,0,0,0" Padding="8,1" FontSize="12.5"
+                                                                Visibility="{Binding SubagentVisibility}" IsEnabled="{Binding HasDefinition}"
+                                                                Click="ShowDefinition_Click" ToolTip="{Binding DefinitionTip}" ToolTipService.ShowOnDisabled="True"/>
                                                     </StackPanel>
                                                     <TextBlock Text="{Binding Allowed}" Visibility="{Binding AllowedVisibility}" Foreground="{StaticResource Faint}"
                                                                FontSize="12.5" TextWrapping="Wrap" Margin="0,2,0,0"

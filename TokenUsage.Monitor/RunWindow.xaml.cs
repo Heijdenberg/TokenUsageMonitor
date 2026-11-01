@@ -7,9 +7,12 @@ namespace TokenUsage.Monitor;
 /// <summary>One run split by agent and model, opened by double-clicking it in the runs grid.</summary>
 public partial class RunWindow : Window
 {
+    private readonly RunRow _run;
+
     public RunWindow(RunRow run)
     {
         InitializeComponent();
+        _run = run;
         Heading.Text = run.Label;
         Details.Text = run.Details;
         Agents.ItemsSource = run.Agents;
@@ -46,19 +49,31 @@ public partial class RunWindow : Window
         new PromptWindow(d.Content, details, "Agentdefinition vid körningen", markdown: true) { Owner = this }.Show();
     }
 
+    private void ShowAgentPrompt_Click(object sender, RoutedEventArgs e)
+    {
+        if (((FrameworkElement)sender).DataContext is not ActivityRow { AgentId: { } id } row) return;
+        var prompt = _run.ReadAgentPrompt(id) ?? "(uppdraget finns inte längre i loggen)";
+        new PromptWindow(prompt, row.Name, "Uppdraget från huvudsessionen", markdown: true) { Owner = this }.Show();
+    }
+
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }
 
 /// <summary>An agent in the run's tree, with its tool calls as bars and its skills as tags.</summary>
 public sealed class ActivityRow
 {
+    public required string? AgentId { get; init; }
+    public Visibility SubagentVisibility => AgentId is null ? Visibility.Collapsed : Visibility.Visible;
     public required string Name { get; init; }
     public required Thickness Indent { get; init; }
     public required Visibility BranchVisibility { get; init; }
     public required string Summary { get; init; }
     /// <summary>The agent file as it was when the agent ran, if a copy was kept.</summary>
     public required AgentDefinition? Definition { get; init; }
-    public Visibility DefinitionVisibility => Definition is null ? Visibility.Collapsed : Visibility.Visible;
+    public bool HasDefinition => Definition is not null;
+    public string DefinitionTip => HasDefinition
+        ? "Agentfilen som den såg ut när agenten kördes"
+        : "Ingen sparad definition: inbyggd agent, eller körd innan definitioner sparades";
     /// <summary>The tools the agent's type was allowed when it ran; null when the log doesn't say.</summary>
     public required string? Allowed { get; init; }
     public Visibility AllowedVisibility => Allowed is null ? Visibility.Collapsed : Visibility.Visible;
@@ -91,6 +106,7 @@ public sealed class ActivityRow
         var max = a.Tools.Count == 0 ? 1 : a.Tools.Values.Max();
         return new ActivityRow
         {
+            AgentId = a.AgentId,
             Name = run.AgentName(a.AgentId),
             Definition = definition,
             Indent = new Thickness(Math.Max(level - 1, 0) * 22, 0, 0, 0),

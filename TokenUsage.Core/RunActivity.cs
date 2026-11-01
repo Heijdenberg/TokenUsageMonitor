@@ -84,6 +84,24 @@ public static class RunActivity
         return result;
     }
 
+    /// <summary>
+    /// The task the subagent was given: the first message in its log, as its parent wrote it. Read on request
+    /// and never stored, since it can hold anything from your prompt. Null once the log is gone.
+    /// </summary>
+    public static string? ReadAgentPrompt(string mainLogPath, string agentId)
+    {
+        var log = Path.Combine(Path.ChangeExtension(mainLogPath, null), "subagents", $"agent-{agentId}.jsonl");
+        foreach (var record in Records(log))
+        {
+            if (Json.String(record, "type") != "user") continue;
+            if (!Json.Object(record, "message").TryGetProperty("content", out var content)) return null;
+            return content.ValueKind == JsonValueKind.String
+                ? content.GetString()
+                : string.Join("\n\n", content.EnumerateArray().Where(b => Json.String(b, "type") == "text").Select(b => Json.String(b, "text")));
+        }
+        return null;
+    }
+
     private sealed class Counter
     {
         private readonly Dictionary<string, int> _tools = [];

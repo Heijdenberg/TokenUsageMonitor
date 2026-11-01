@@ -85,6 +85,24 @@ public sealed class RunActivityTests : IDisposable
     }
 
     [Fact]
+    public void Reads_the_task_a_subagent_was_given_from_its_first_message()
+    {
+        var main = Path.Combine(_root, "s1.jsonl");
+        var sub = Path.Combine(_root, "s1", "subagents");
+        File.WriteAllLines(Path.Combine(sub, "agent-a.jsonl"), [
+            """{"type":"user","message":{"role":"user","content":"Plan the change"}}""",
+            """{"type":"user","message":{"role":"user","content":"later"}}""",
+        ]);
+        File.WriteAllLines(Path.Combine(sub, "agent-b.jsonl"), [
+            """{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Part one"},{"type":"image"},{"type":"text","text":"Part two"}]}}""",
+        ]);
+
+        Assert.Equal("Plan the change", RunActivity.ReadAgentPrompt(main, "a"));
+        Assert.Equal("Part one\n\nPart two", RunActivity.ReadAgentPrompt(main, "b"));
+        Assert.Null(RunActivity.ReadAgentPrompt(main, "gone"));
+    }
+
+    [Fact]
     public void A_missing_log_gives_an_empty_main_session()
     {
         var activity = RunActivity.Read(Path.Combine(_root, "gone.jsonl"), ["p1"], ["a"]);

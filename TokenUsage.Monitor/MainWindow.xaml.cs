@@ -435,6 +435,9 @@ public sealed class RunRow(RunSummary run) : System.ComponentModel.INotifyProper
     /// <summary>The slash command the run was started with, such as a skill; null for a plain message.</summary>
     public string? Command => run.Command;
 
+    /// <summary>The task the main session gave a subagent, read from its log; null once the log is gone.</summary>
+    public string? ReadAgentPrompt(string agentId) => run.Prompt is { } p ? RunActivity.ReadAgentPrompt(p.LogPath, agentId) : null;
+
     /// <summary>An agent's name without its model, as the agents grid shows it.</summary>
     public string AgentName(string? agentId) => run.Agents.FirstOrDefault(a => a.AgentId == agentId)?.Name ?? "Underagent " + agentId;
 
