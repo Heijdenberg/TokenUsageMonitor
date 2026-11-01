@@ -426,4 +426,28 @@
     <Style x:Key="StrongNumber" TargetType="TextBlock" BasedOn="{StaticResource Number}">
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
+
+    <!-- Grid cells shared by the runs grid and the run window. -->
+    <Style x:Key="ModelCell" TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridCell}}" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="PromptCell" TargetType="TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
+    <!-- The price over a bar as long as its share of the largest price in the list, so costly rows stand out. -->
+    <DataTemplate x:Key="CostBarCell">
+        <Grid>
+            <Border Background="{StaticResource Accent}" Opacity="0.3" CornerRadius="3" Margin="0,-3" RenderTransformOrigin="1,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform ScaleX="{Binding CostShare}"/>
+                </Border.RenderTransform>
+            </Border>
+            <TextBlock Text="{Binding Cost, StringFormat='{}{0:N2} $'}" Style="{StaticResource StrongNumber}" Margin="8,0,4,0"/>
+        </Grid>
+    </DataTemplate>
 </ResourceDictionary>

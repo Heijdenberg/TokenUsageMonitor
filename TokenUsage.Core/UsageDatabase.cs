@@ -10,7 +10,7 @@ namespace TokenUsage.Core;
 /// </summary>
 public sealed class UsageDatabase : IDisposable
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
 
     // Each message you send gets a prompt id; everything it triggers, subagents included, carries it.
     // No text is stored: only where the message is in Claude Code's log, and the command name for
@@ -35,7 +35,11 @@ public sealed class UsageDatabase : IDisposable
         CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, project TEXT, title TEXT, ai_title TEXT);
         CREATE TABLE IF NOT EXISTS agents (
             agent_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, agent_type TEXT,
-            description TEXT, model TEXT, tool_use_id TEXT);
+            description TEXT, model TEXT, tool_use_id TEXT, definition_id INTEGER);
+        -- Agent files as they were when an agent of their type ran; a new row only when the text changes.
+        CREATE TABLE IF NOT EXISTS agent_definitions (
+            id INTEGER PRIMARY KEY, agent_type TEXT NOT NULL, path TEXT NOT NULL, hash TEXT NOT NULL,
+            content TEXT NOT NULL, first_seen INTEGER NOT NULL, UNIQUE (path, hash));
         CREATE TABLE IF NOT EXISTS responses (
             message_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, prompt_id TEXT, agent_id TEXT,
             at INTEGER NOT NULL, model TEXT NOT NULL, speed TEXT,
@@ -70,6 +74,7 @@ public sealed class UsageDatabase : IDisposable
                 if (version is > 0 and < 2) Upgrade1To2(db, tx);
                 if (version is > 0 and < 3) Upgrade2To3(db, tx);
                 if (version is > 0 and < 4) Upgrade3To4(db, tx);
+                if (version is > 0 and < 5) Upgrade4To5(db, tx);
                 db.Execute(PromptsTable, tx);
                 db.Execute($"PRAGMA user_version={SchemaVersion}", tx);
             }
@@ -102,6 +107,14 @@ public sealed class UsageDatabase : IDisposable
     {
         // A new database gets the column from Schema; earlier versions created log_files without it.
         db.Execute("ALTER TABLE log_files ADD COLUMN meta_stamp TEXT", tx);
+    }
+
+    /// <summary>Links each subagent to its agent file as it was when it ran; agents from before get none.</summary>
+    private static void Upgrade4To5(UsageDatabase db, SqliteTransaction tx)
+    {
+        // Versions before 2 had no agents table, so Schema has just created it with the column.
+        if (db.ScalarLong("SELECT count(*) FROM pragma_table_info('agents') WHERE name = 'definition_id'", tx) == 0)
+            db.Execute("ALTER TABLE agents ADD COLUMN definition_id INTEGER", tx);
     }
 
     private void VacuumIfPending()

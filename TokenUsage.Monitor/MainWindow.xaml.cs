@@ -281,16 +281,11 @@ public partial class MainWindow : Window
         RunsSummary.Text = $"Uppdaterad {_runsLoadedAt:HH:mm:ss}";
     }
 
-    private void Runs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Runs_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (Runs.SelectedItem is not RunRow run)
-        {
-            Agents.ItemsSource = null;
-            DetailsTitle.Text = "Välj en körning för att se vad varje agent och modell kostade.";
-            return;
-        }
-        Agents.ItemsSource = run.Agents;
-        DetailsTitle.Text = run.Details;
+        // Only a double click on a row opens it, not one on the headers or the scroll bar.
+        if (ItemsControl.ContainerFromElement(Runs, (DependencyObject)e.OriginalSource) is not DataGridRow { Item: RunRow run }) return;
+        new RunWindow(run) { Owner = this }.Show();
     }
 
     private void Runs_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -431,6 +426,18 @@ public sealed class RunRow(RunSummary run) : System.ComponentModel.INotifyProper
     /// <summary>The whole prompt, read from the log (the database holds no prompt text); the label once the log is gone.</summary>
     public string PromptText() => run.Prompt?.ReadText() ?? Label;
 
+    /// <summary>What each agent did, read from the logs; empty when the run has no known message to start from.</summary>
+    public IReadOnlyList<AgentActivity> ReadActivity() => run.Prompt is { } p
+        ? RunActivity.Read(p.LogPath, run.PromptIds,
+            run.Agents.Select(a => a.AgentId).OfType<string>().Distinct().ToList())
+        : [];
+
+    /// <summary>The slash command the run was started with, such as a skill; null for a plain message.</summary>
+    public string? Command => run.Command;
+
+    /// <summary>An agent's name without its model, as the agents grid shows it.</summary>
+    public string AgentName(string? agentId) => run.Agents.FirstOrDefault(a => a.AgentId == agentId)?.Name ?? "Underagent " + agentId;
+
     /// <summary>
     /// The row as labelled lines, with the whole prompt and the full session id.
     /// </summary>
@@ -463,6 +470,7 @@ public sealed class AgentRow(AgentUsage agent, double maxCost)
 {
     /// <summary>The price as a share of the costliest agent in the run, for the bar behind it.</summary>
     public double CostShare => maxCost > 0 ? (agent.CostUsd ?? 0) / maxCost : 0;
+    public string? AgentId => agent.AgentId;
     public string Name => agent.Name;
     public string Model => agent.Model;
     public long Responses => agent.Tokens.Responses;

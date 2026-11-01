@@ -10,7 +10,7 @@ public sealed record AgentUsage(string? AgentId, string Name, string Model, Toke
 public sealed record RunSummary(
     string SessionId, string? SessionTitle, string? PromptId, string Label,
     DateTimeOffset Start, DateTimeOffset End, TokenCounts Tokens, double? CostUsd,
-    IReadOnlyList<AgentUsage> Agents, PromptSource? Prompt);
+    IReadOnlyList<AgentUsage> Agents, PromptSource? Prompt, IReadOnlyList<string> PromptIds, string? Command);
 
 /// <summary>Where a run's message is in Claude Code's log. The database holds no prompt text.</summary>
 public sealed record PromptSource(string LogPath, long LogOffset, string PromptId)
@@ -71,7 +71,8 @@ public static class RunReport
                     head is null ? "(utan prompt)" : LabelOf(head),
                     head?.At ?? run.Min(g => g.First), run.Max(g => g.Last),
                     run.Aggregate(TokenCounts.Zero, (sum, g) => sum + g.Tokens), SumCost(run), agents,
-                    head?.LogPath is null ? null : new PromptSource(head.LogPath, head.LogOffset, head.PromptId));
+                    head?.LogPath is null ? null : new PromptSource(head.LogPath, head.LogOffset, head.PromptId),
+                    run.Select(g => g.PromptId).OfType<string>().Distinct().ToList(), head?.Command);
             });
         return runs.Where(r => r.Start >= since).OrderByDescending(r => r.Start).ToList();
     }
@@ -172,6 +173,20 @@ public static class RunReport
         while (r.Read())
             if (sessions.Contains(r.GetString(0))) result[r.GetString(0)] = r.GetString(1);
         return result;
+    }
+
+    /// <summary>The agent file the subagent ran with, when a copy was kept at the time.</summary>
+    public static AgentDefinition? LoadDefinition(UsageDatabase db, string agentId)
+    {
+        using var cmd = db.Command("""
+            SELECT d.agent_type, d.path, d.content, d.first_seen
+            FROM agents a JOIN agent_definitions d ON d.id = a.definition_id WHERE a.agent_id = $a
+            """);
+        cmd.Parameters.AddWithValue("$a", agentId);
+        using var r = cmd.ExecuteReader();
+        return r.Read()
+            ? new AgentDefinition(r.GetString(0), r.GetString(1), r.GetString(2), DateTimeOffset.FromUnixTimeMilliseconds(r.GetInt64(3)))
+            : null;
     }
 
     private static Dictionary<string, string> LoadAgentNames(UsageDatabase db, HashSet<string> sessions)

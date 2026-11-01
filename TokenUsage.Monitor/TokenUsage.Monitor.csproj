@@ -16,4 +16,8 @@
     <Resource Include="Fonts\*.ttf" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.5.1" />
+  </ItemGroup>
+
 </Project>

@@ -254,6 +254,37 @@ public sealed class TranscriptImporter(UsageDatabase db)
         cmd.Parameters.AddWithValue("$m", (object?)model ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$u", (object?)toolUseId ?? DBNull.Value);
         cmd.ExecuteNonQuery();
+
+        if (type is not null) LinkDefinition(source.AgentId!, type, path, tx);
+    }
+
+    /// <summary>
+    /// Keeps a copy of the agent file the subagent ran with, the first time its log is read while still fresh.
+    /// The logs only name the agent type, and the file may change later.
+    /// </summary>
+    private void LinkDefinition(string agentId, string type, string path, SqliteTransaction tx)
+    {
+        using (var linked = db.Command("SELECT definition_id IS NOT NULL FROM agents WHERE agent_id = $a", tx))
+        {
+            linked.Parameters.AddWithValue("$a", agentId);
+            if (Convert.ToInt64(linked.ExecuteScalar()) == 1) return;
+        }
+        if (DateTime.UtcNow - File.GetLastWriteTimeUtc(path) > AgentDefinitions.Freshness) return;
+        if (AgentDefinitions.Find(path, type) is not var (file, content)) return;
+
+        using var cmd = db.Command("""
+            INSERT INTO agent_definitions (agent_type, path, hash, content, first_seen) VALUES ($t, $p, $h, $c, $at)
+            ON CONFLICT (path, hash) DO NOTHING;
+            UPDATE agents SET definition_id = (SELECT id FROM agent_definitions WHERE path = $p AND hash = $h)
+            WHERE agent_id = $a;
+            """, tx);
+        cmd.Parameters.AddWithValue("$t", type);
+        cmd.Parameters.AddWithValue("$p", Path.GetFullPath(file));
+        cmd.Parameters.AddWithValue("$h", AgentDefinitions.Hash(content));
+        cmd.Parameters.AddWithValue("$c", content);
+        cmd.Parameters.AddWithValue("$at", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        cmd.Parameters.AddWithValue("$a", agentId);
+        cmd.ExecuteNonQuery();
     }
 
     private (long Offset, string? PromptId, string? MetaStamp) ReadLogState(string key, SqliteTransaction tx)

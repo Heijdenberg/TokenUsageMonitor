@@ -58,31 +58,9 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{Binding SessionToolTip}"/>
         </Style>
-        <Style x:Key="ModelCell" TargetType="TextBlock" BasedOn="{StaticResource Caption}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridCell}}" Value="True">
-                    <Setter Property="Foreground" Value="{StaticResource Accent}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="PromptCell" TargetType="TextBlock">
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-        </Style>
         <Style x:Key="SummaryValue" TargetType="TextBlock" BasedOn="{StaticResource FigureValue}">
             <Setter Property="FontSize" Value="22"/>
         </Style>
-
-        <!-- The price over a bar as long as its share of the largest price in the list, so costly rows stand out. -->
-        <DataTemplate x:Key="CostBarCell">
-            <Grid>
-                <Border Background="{StaticResource Accent}" Opacity="0.3" CornerRadius="3" Margin="0,-3" RenderTransformOrigin="1,0.5">
-                    <Border.RenderTransform>
-                        <ScaleTransform ScaleX="{Binding CostShare}"/>
-                    </Border.RenderTransform>
-                </Border>
-                <TextBlock Text="{Binding Cost, StringFormat='{}{0:N2} $'}" Style="{StaticResource StrongNumber}" Margin="8,0,4,0"/>
-            </Grid>
-        </DataTemplate>
     </Window.Resources>
 
     <!-- Fallback frame for when Windows doesn't draw a rounded border (Windows 10); code-behind decides. -->
@@ -137,9 +115,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="3*" MinHeight="120"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="2*" MinHeight="140"/>
+                            <RowDefinition Height="*" MinHeight="120"/>
                         </Grid.RowDefinitions>
 
                         <DockPanel>
@@ -178,7 +154,7 @@
                         </UniformGrid>
 
                         <ContentControl Grid.Row="2" Style="{StaticResource OutlineCard}" Padding="6,10,6,6">
-                            <DataGrid x:Name="Runs" SelectionChanged="Runs_SelectionChanged"
+                            <DataGrid x:Name="Runs" MouseDoubleClick="Runs_MouseDoubleClick"
                                       ContextMenuOpening="Runs_ContextMenuOpening" PreviewKeyDown="Runs_PreviewKeyDown">
                                 <DataGrid.ContextMenu>
                                     <ContextMenu>
@@ -202,32 +178,6 @@
                             </DataGrid>
                         </ContentControl>
 
-                        <GridSplitter Grid.Row="3" Height="12" HorizontalAlignment="Stretch" Background="Transparent"/>
-
-                        <!-- The chosen run: its details, then how agents and models split the cost. -->
-                        <ContentControl Grid.Row="4" Style="{StaticResource OutlineCard}" Padding="16,14,16,6">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock x:Name="DetailsTitle" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis"
-                                           Text="Välj en körning för att se vad varje agent och modell kostade."/>
-                                <DataGrid x:Name="Agents" Grid.Row="1" Margin="-10,8,-10,0">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Agent" Binding="{Binding Name}" Width="*" ElementStyle="{StaticResource PromptCell}"/>
-                                        <DataGridTextColumn Header="Modell" Binding="{Binding Model}" ElementStyle="{StaticResource ModelCell}"/>
-                                        <DataGridTextColumn Header="Svar" Binding="{Binding Responses, StringFormat=N0}" ElementStyle="{StaticResource Number}"/>
-                                        <DataGridTextColumn Header="In" Binding="{Binding Input, StringFormat=N0}" ElementStyle="{StaticResource MutedNumber}"/>
-                                        <DataGridTextColumn Header="Utskrivet" Binding="{Binding Output, StringFormat=N0}" ElementStyle="{StaticResource Number}"/>
-                                        <DataGridTextColumn Header="varav tänkande" Binding="{Binding Thinking, StringFormat=N0}" ElementStyle="{StaticResource MutedNumber}"/>
-                                        <DataGridTextColumn Header="Cacheläsning" Binding="{Binding CacheRead, StringFormat=N0}" ElementStyle="{StaticResource MutedNumber}"/>
-                                        <DataGridTextColumn Header="Cacheskrivning" Binding="{Binding CacheWrite, StringFormat=N0}" ElementStyle="{StaticResource MutedNumber}"/>
-                                        <DataGridTemplateColumn Header="API-pris" SortMemberPath="Cost" Width="130" CellTemplate="{StaticResource CostBarCell}"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </Grid>
-                        </ContentControl>
                     </Grid>
                 </TabItem>
             </TabControl>

@@ -20,7 +20,7 @@
 
             <!-- The title bar is the caption, so the window can be dragged by it. -->
             <StackPanel VerticalAlignment="Center" Margin="20,0">
-                <TextBlock Text="Hela prompten" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Background}"/>
+                <TextBlock x:Name="Heading" Text="Hela prompten" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Background}"/>
                 <TextBlock x:Name="Details" FontSize="13" Foreground="{StaticResource Background}" Opacity="0.75" Margin="0,2,0,0"
                            TextTrimming="CharacterEllipsis"/>
             </StackPanel>
@@ -32,10 +32,15 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
+                    <!-- The raw text, or the same text formatted when it is Markdown. -->
                     <ContentControl Style="{StaticResource OutlineCard}" Padding="0">
-                        <TextBox x:Name="Text" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                                 Background="Transparent" BorderThickness="0" Padding="12,10" FontSize="13.5"
-                                 Foreground="{StaticResource Text}" CaretBrush="{StaticResource Text}" SelectionBrush="{StaticResource Accent}"/>
+                        <Grid>
+                            <TextBox x:Name="Text" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     Background="Transparent" BorderThickness="0" Padding="12,10" FontSize="13.5"
+                                     Foreground="{StaticResource Text}" CaretBrush="{StaticResource Text}" SelectionBrush="{StaticResource Accent}"/>
+                            <FlowDocumentScrollViewer x:Name="Formatted" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"
+                                                      IsToolBarVisible="False" SelectionBrush="{StaticResource Accent}"/>
+                        </Grid>
                     </ContentControl>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
