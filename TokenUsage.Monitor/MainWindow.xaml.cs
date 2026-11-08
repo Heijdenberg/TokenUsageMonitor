@@ -76,7 +76,7 @@ public partial class MainWindow : Window
         HwndSource.FromHwnd(hwnd).AddHook(WndProc);
 
         const int DWMWA_WINDOW_CORNER_PREFERENCE = 33, DWMWCP_ROUND = 2, DWMWA_BORDER_COLOR = 34;
-        var frame = ((SolidColorBrush)window.FindResource("Accent")).Color;
+        var frame = ((SolidColorBrush)window.FindResource("WindowEdge")).Color;
         int round = DWMWCP_ROUND, borderColor = frame.R | frame.G << 8 | frame.B << 16;   // COLORREF 0x00BBGGRR
         if (Native.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int)) != 0) return false;
         Native.DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(int));

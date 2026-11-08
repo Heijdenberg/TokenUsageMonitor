@@ -1,17 +1,20 @@
-<!-- Black theme: a black window with yellow as the accent for borders, navigation and selected rows,
+﻿<!-- Black theme: a black window with yellow as the accent for borders, navigation and selected rows,
      green/yellow/red only for how much of a limit is used. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <SolidColorBrush x:Key="Background" Color="#232222"/>
-    <SolidColorBrush x:Key="Surface" Color="#25272B"/>
-    <SolidColorBrush x:Key="SurfaceRaised" Color="#2E3136"/>
-    <SolidColorBrush x:Key="CardEdge" Color="#30333A"/>
-    <SolidColorBrush x:Key="Line" Color="#373A41"/>
-    <SolidColorBrush x:Key="Text" Color="#ECEDEE"/>
-    <SolidColorBrush x:Key="Muted" Color="#9A9EA6"/>
-    <SolidColorBrush x:Key="Faint" Color="#6E727A"/>
+    <SolidColorBrush x:Key="Surface" Color="#2B2A2A"/>
+    <SolidColorBrush x:Key="SurfaceRaised" Color="#343333"/>
+    <SolidColorBrush x:Key="CardEdge" Color="#3A3939"/>
+    <SolidColorBrush x:Key="Line" Color="#3A3939"/>
+    <SolidColorBrush x:Key="Text" Color="#ECECEC"/>
+    <SolidColorBrush x:Key="Muted" Color="#A6A5A5"/>
+    <SolidColorBrush x:Key="Faint" Color="#757474"/>
     <SolidColorBrush x:Key="Accent" Color="#F7E501"/>
+    <!-- The title bar and window frame: the same dark gray as the content; the frame is a faint edge. -->
+    <SolidColorBrush x:Key="TitleBar" Color="#232222"/>
+    <SolidColorBrush x:Key="WindowEdge" Color="#3A3939"/>
 
     <!-- Lato is embedded (Fonts/, OFL): Regular for all text, Bold where a style asks for weight. Popups such as
          context menus and tooltips don't inherit the window's font, so their styles set it too. -->
@@ -43,10 +46,11 @@
         </Setter>
     </Style>
 
-    <!-- A card drawn only as an accent outline; without a surface it casts no shadow either. -->
+    <!-- A card drawn only as a faint outline; without a surface it casts no shadow either. The accent is kept
+         for what you can click. -->
     <Style x:Key="OutlineCard" TargetType="ContentControl" BasedOn="{StaticResource Card}">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
     </Style>
 
     <Style x:Key="Caption" TargetType="TextBlock">
